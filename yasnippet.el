@@ -4741,6 +4741,21 @@ When multiple expressions are found, only the last one counts."
         (cond
          ((and (not number) simple-fom)
           (yas--one-simple-fom snippet field2))
+         ;; Duplicate empty placeholder becomes a mirror.
+         ((and number
+               (yas--snippet-find-field snippet number)
+               (string= "" field2))
+          (goto-char real-match-end-0)
+          (let* ((field (yas--snippet-find-field snippet number))
+                 (mirror (yas--make-mirror
+                          (yas--make-marker (match-beginning 0))
+                          (yas--make-marker (match-beginning 0))
+                          nil)))
+            (push mirror (yas--field-mirrors field))
+            (yas--calculate-simple-fom-parentage snippet mirror)
+            (push (cons (match-beginning 0) real-match-end-0)
+                  yas--dollar-regions)))
+         ;; Otherwise create a new field.
          (brand-new-field
           (goto-char real-match-end-0)
           (push (cons (1- real-match-end-0) real-match-end-0)

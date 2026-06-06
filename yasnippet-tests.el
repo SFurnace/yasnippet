@@ -170,6 +170,26 @@ This lets `yas--maybe-expand-from-keymap-filter' work as expected."
     (should (string= (yas--buffer-contents)
                      "bla from another bla"))))
 
+(ert-deftest empty-duplicate-placeholder-becomes-mirror ()
+  "Duplicate ${N:} (empty) placeholders should act as mirrors."
+  (with-temp-buffer
+    (yas-minor-mode 1)
+    (let ((yas-indent-line nil))  ; Avoid indentation removing leading whitespace.
+      (yas-expand-snippet "${1:} = ${1:}"))
+    ;; Should have exactly one field with number 1, plus one mirror.
+    (let* ((snippet (car yas--active-snippets))
+           (fields (yas--snippet-fields snippet))
+           (field-1 (cl-find-if (lambda (f) (eq 1 (yas--field-number f))) fields)))
+      (should (= 1 (length fields)))
+      (should field-1)
+      (should (= 1 (length (yas--field-mirrors field-1)))))
+    ;; Typing should sync both positions.
+    (yas-mock-insert "foo")
+    (should (string= (yas--buffer-contents) "foo = foo"))
+    ;; TAB should exit snippet (only one navigable field).
+    (ert-simulate-command '(yas-next-field-or-maybe-expand))
+    (should (null yas--active-snippets))))
+
 (ert-deftest mirror-with-transformation ()
   (with-temp-buffer
     (yas-minor-mode 1)
